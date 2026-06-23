@@ -1,0 +1,71 @@
+{
+  "name": "search-fedi-profile",
+  "version": "1.0.0",
+  "description": "Search and discover fediverse profiles across Bluesky, Nostr, Threads, Mastodon, Misskey, Pleroma and more",
+  "type": "module",
+  "main": "./dist/core/resolver.js",
+  "types": "./dist/core/resolver.d.ts",
+  "bin": {
+    "search-fedi-profile": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/core/resolver.js",
+      "types": "./dist/core/resolver.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "tsx watch src/server/index.ts",
+    "start": "tsx src/server/index.ts",
+    "cli": "tsx src/cli/index.ts",
+    "build": "tsup",
+    "format": "prettier --write 'src/**/*.ts' 'src/**/*.tsx'",
+    "format:check": "prettier --check 'src/**/*.ts' 'src/**/*.tsx'",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "fediverse",
+    "mastodon",
+    "bluesky",
+    "nostr",
+    "threads",
+    "activitypub",
+    "atproto",
+    "nip05",
+    "webfinger",
+    "misskey",
+    "pleroma",
+    "social",
+    "profile",
+    "search"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BRAVO68WEB/search-fedi-profile"
+  },
+  "bugs": {
+    "url": "https://github.com/BRAVO68WEB/search-fedi-profile/issues"
+  },
+  "homepage": "https://github.com/BRAVO68WEB/search-fedi-profile#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.0",
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "prettier": "^3.5.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
