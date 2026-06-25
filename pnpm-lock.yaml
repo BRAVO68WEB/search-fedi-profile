@@ -14,6 +14,9 @@ importers:
       hono:
         specifier: ^4.7.0
         version: 4.12.26
+      http-message-sig:
+        specifier: ^0.2.0
+        version: 0.2.0
     devDependencies:
       '@types/node':
         specifier: ^22.10.0
@@ -581,6 +584,9 @@ packages:
     resolution: {integrity: sha512-uyZtpnYxM9CmQ7QsQknM4zN8EftNqhON1qYeIKM0Se67CCEe2c44xyGURwB0axX2fBDu1dqHrHAc1hmNT8ITkw==}
     engines: {node: '>=16.9.0'}
 
+  http-message-sig@0.2.0:
+    resolution: {integrity: sha512-9fXSmxsdWDuMgk6Rd5Jc8Fa/wEblmRXZyO89KPkRrGsdeAwYlUkvS5oSOw6aOKKK/qKHNTq3jCHHTRCEid6RaQ==}
+
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
     engines: {node: '>=10'}
@@ -668,6 +674,10 @@ packages:
   source-map@0.7.6:
     resolution: {integrity: sha512-i5uvt8C3ikiWeNZSVZNWcfZPItFQOsYTUAOkcUPGd8DqDy1uOUikjt5dG+uRlwyvR108Fb9DOd4GvXfT0N2/uQ==}
     engines: {node: '>= 12'}
+
+  structured-headers@2.0.2:
+    resolution: {integrity: sha512-IUul56vVHuMg2UxWhwDj9zVJE6ztYEQQkynr1FQ/NydPhivtk5+Qb2N1RS36owEFk2fNUriTguJ2R7htRObcdA==}
+    engines: {node: '>=18', npm: '>=6'}
 
   sucrase@3.35.1:
     resolution: {integrity: sha512-DhuTmvZWux4H1UOnWMB3sk0sbaCVOoQZjv8u1rDoTV0HTdGem9hkAZtl4JZy8P2z4Bg0nT+YMeOFyVr4zcG5Tw==}
@@ -1085,6 +1095,10 @@ snapshots:
 
   hono@4.12.26: {}
 
+  http-message-sig@0.2.0:
+    dependencies:
+      structured-headers: 2.0.2
+
   joycon@3.1.1: {}
 
   lilconfig@3.1.3: {}
@@ -1172,6 +1186,8 @@ snapshots:
       fsevents: 2.3.3
 
   source-map@0.7.6: {}
+
+  structured-headers@2.0.2: {}
 
   sucrase@3.35.1:
     dependencies:
