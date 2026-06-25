@@ -2,9 +2,11 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { api } from "./routes/api.js";
 import { web } from "./routes/web.js";
+import { actor } from "./routes/actor.js";
 
 const app = new Hono();
 
+app.route("/", actor);
 app.route("/api", api);
 app.route("/", web);
 

@@ -1,4 +1,5 @@
-import type { UnifiedProfile } from "../types.js";
+import type { UnifiedProfile, WebFingerData } from "../types.js";
+import { getOrCreateRSAKeys, signRequestDraftCavage } from "../http-signature.js";
 
 const THREADS_DOMAIN = "threads.net";
 
@@ -18,6 +19,11 @@ interface ActorDocument {
   url?: string;
   published?: string;
 }
+
+const BASE_HEADERS = {
+  Accept: "application/activity+json",
+  "User-Agent": "search-fedi-profile/1.0",
+};
 
 function stripHtml(html: string | undefined): string | undefined {
   if (!html) return undefined;
@@ -67,15 +73,17 @@ export async function searchThreads(user: string, signal?: AbortSignal): Promise
   );
   const actorUrl = actorLink?.href;
 
+  const webFinger: WebFingerData = {
+    subject: wf.subject,
+    aliases: wf.aliases,
+    links: wf.links,
+    raw: wf as unknown as Record<string, unknown>,
+  };
+
   if (actorUrl) {
+    // 1. Try unsigned request
     try {
-      const actorRes = await fetch(actorUrl, {
-        signal,
-        headers: {
-          Accept: "application/activity+json",
-          "User-Agent": "search-fedi-profile/1.0",
-        },
-      });
+      const actorRes = await fetch(actorUrl, { signal, headers: BASE_HEADERS });
 
       if (actorRes.ok) {
         const actor = (await actorRes.json()) as ActorDocument;
@@ -89,11 +97,35 @@ export async function searchThreads(user: string, signal?: AbortSignal): Promise
           url: actor.url ?? profileUrl,
           software: "threads",
           createdAt: actor.published,
+          webFinger,
         };
       }
+
+      // 2. If 401, try with Draft Cavage HTTP Signature
+      if (actorRes.status === 401) {
+        const { privateKey } = getOrCreateRSAKeys();
+        const signedHeaders = signRequestDraftCavage(actorUrl, BASE_HEADERS, privateKey);
+
+        const signedRes = await fetch(actorUrl, { signal, headers: signedHeaders });
+
+        if (signedRes.ok) {
+          const actor = (await signedRes.json()) as ActorDocument;
+          return {
+            platform: "threads",
+            handle: `@${actor.preferredUsername ?? cleanUser}@${THREADS_DOMAIN}`,
+            displayName: actor.name,
+            bio: stripHtml(actor.summary),
+            avatar: actor.icon?.url,
+            banner: actor.image?.url,
+            url: actor.url ?? profileUrl,
+            software: "threads",
+            createdAt: actor.published,
+            webFinger,
+          };
+        }
+      }
     } catch {
-      // Actor fetch failed (Threads requires HTTP Signatures)
-      // Fall through to partial profile
+      // Actor fetch failed
     }
   }
 
@@ -103,8 +135,10 @@ export async function searchThreads(user: string, signal?: AbortSignal): Promise
     displayName: cleanUser,
     url: profileUrl,
     software: "threads",
+    isPartial: true,
+    webFinger,
     extra: {
-      note: "Threads requires HTTP Signatures for full profile data. Showing basic info from WebFinger.",
+      note: "Threads requires HTTP Signatures for full actor data but returns 500 on signed requests. Showing basic info from WebFinger.",
     },
   };
 }

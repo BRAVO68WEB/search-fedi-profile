@@ -1,4 +1,4 @@
-import type { UnifiedProfile } from "../types.js";
+import type { UnifiedProfile, NodeInfoData, WebFingerData } from "../types.js";
 
 interface WebFingerLink {
   rel: string;
@@ -18,9 +18,11 @@ interface ActorDocument {
   attachment?: Array<{ type: string; name: string; value: string }>;
 }
 
-interface NodeInfoSoftware {
-  name?: string;
-  version?: string;
+interface NodeInfoRaw {
+  software?: { name?: string; version?: string };
+  protocols?: string[];
+  openRegistrations?: boolean;
+  usage?: { users?: { total?: number; activeMonth?: number }; localPosts?: number };
 }
 
 function stripHtml(html: string | undefined): string | undefined {
@@ -41,27 +43,27 @@ function stripHtml(html: string | undefined): string | undefined {
 async function probeNodeInfo(
   domain: string,
   signal?: AbortSignal,
-): Promise<NodeInfoSoftware | null> {
+): Promise<{ software: { name?: string; version?: string } | null; raw: NodeInfoRaw | null }> {
   try {
     const niRes = await fetch(`https://${domain}/.well-known/nodeinfo`, {
       signal,
       headers: { "User-Agent": "search-fedi-profile/1.0" },
     });
-    if (!niRes.ok) return null;
+    if (!niRes.ok) return { software: null, raw: null };
     const ni = (await niRes.json()) as { links?: Array<{ rel: string; href: string }> };
     const schemaUrl =
       ni.links?.find((l) => l.rel === "http://nodeinfo.diaspora.software/ns/schema/2.1")?.href ??
       ni.links?.find((l) => l.rel === "http://nodeinfo.diaspora.software/ns/schema/2.0")?.href;
-    if (!schemaUrl) return null;
+    if (!schemaUrl) return { software: null, raw: null };
     const docRes = await fetch(schemaUrl, {
       signal,
       headers: { "User-Agent": "search-fedi-profile/1.0" },
     });
-    if (!docRes.ok) return null;
-    const doc = (await docRes.json()) as { software?: NodeInfoSoftware };
-    return doc.software ?? null;
+    if (!docRes.ok) return { software: null, raw: null };
+    const doc = (await docRes.json()) as NodeInfoRaw;
+    return { software: doc.software ?? null, raw: doc };
   } catch {
-    return null;
+    return { software: null, raw: null };
   }
 }
 
@@ -70,8 +72,11 @@ export async function searchPleroma(
   user: string,
   signal?: AbortSignal,
 ): Promise<UnifiedProfile> {
-  const software = await probeNodeInfo(domain, signal);
-  if (!software || !software.name?.toLowerCase().match(/pleroma|akkoma/)) {
+  const nodeInfoResult = await probeNodeInfo(domain, signal);
+  if (
+    !nodeInfoResult.software ||
+    !nodeInfoResult.software.name?.toLowerCase().match(/pleroma|akkoma/)
+  ) {
     throw new Error(`${domain} does not appear to be a Pleroma/Akkoma instance`);
   }
 
@@ -84,7 +89,11 @@ export async function searchPleroma(
     throw new Error(`WebFinger failed on ${domain}: ${wfRes.status}`);
   }
 
-  const wf = (await wfRes.json()) as { links?: WebFingerLink[]; aliases?: string[] };
+  const wf = (await wfRes.json()) as {
+    subject?: string;
+    links?: WebFingerLink[];
+    aliases?: string[];
+  };
   const actorLink = wf.links?.find(
     (l) =>
       l.rel === "self" &&
@@ -108,6 +117,23 @@ export async function searchPleroma(
 
   const actor = (await actorRes.json()) as ActorDocument;
 
+  const nodeInfo: NodeInfoData | undefined = nodeInfoResult.raw
+    ? {
+        software: nodeInfoResult.raw.software,
+        protocols: nodeInfoResult.raw.protocols,
+        openRegistrations: nodeInfoResult.raw.openRegistrations,
+        usage: nodeInfoResult.raw.usage,
+        raw: nodeInfoResult.raw as Record<string, unknown>,
+      }
+    : undefined;
+
+  const webFinger: WebFingerData = {
+    subject: wf.subject,
+    aliases: wf.aliases,
+    links: wf.links,
+    raw: wf as unknown as Record<string, unknown>,
+  };
+
   return {
     platform: "pleroma",
     handle: `@${actor.preferredUsername ?? user}@${domain}`,
@@ -116,12 +142,13 @@ export async function searchPleroma(
     avatar: actor.icon?.url,
     banner: actor.image?.url,
     url: actor.url ?? `https://${domain}/@${actor.preferredUsername ?? user}`,
-    software: software.name,
-    softwareVersion: software.version,
+    software: nodeInfoResult.software.name,
+    softwareVersion: nodeInfoResult.software.version,
     createdAt: actor.published,
+    nodeInfo,
+    webFinger,
     extra: {
       fields: actor.attachment,
-      instanceSoftware: software.name,
     },
-  } as UnifiedProfile & { softwareVersion?: string };
+  };
 }
