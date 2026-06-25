@@ -162,7 +162,7 @@ mastodon   │ @Gargron@mastodon.social       │ Eugen Rochko         │      
 **JSON API** at `/api/search`:
 
 ```bash
-curl 'https://fedi.comefindme.dev/api/search?q=@bravo68web@xlog.b68.dev'
+curl 'https://fedi.comefindme.dev/api/search?q=@gargron@mastodon.social'
 ```
 
 **Response:**
