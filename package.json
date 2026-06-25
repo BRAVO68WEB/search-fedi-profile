@@ -1,6 +1,6 @@
 {
   "name": "search-fedi-profile",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Search and discover fediverse profiles across Bluesky, Nostr, Threads, Mastodon, Misskey, Pleroma and more",
   "type": "module",
   "main": "./dist/core/resolver.js",
