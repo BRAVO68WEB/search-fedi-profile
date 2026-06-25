@@ -261,4 +261,4 @@ src/
 
 ## License
 
-MIT
+This project is covered under [MIT LICENSE](./LICENSE).
